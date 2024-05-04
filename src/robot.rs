@@ -11,3 +11,13 @@ impl Robot {
         Robot { x, y, direction }
     }
 }
+
+impl Clone for Robot {
+    fn clone(&self) -> Robot {
+        Robot {
+            x: self.x,
+            y: self.y,
+            direction: self.direction,
+        }
+    }
+}
