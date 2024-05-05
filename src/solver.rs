@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{board::Board, cell::State};
+use crate::{board::Board, cell::State, solution::Solution};
 
 pub struct Solver {
     pub all_options: HashMap<usize, Vec<State>>,
@@ -14,6 +14,11 @@ impl Solver {
 
         solver.get_all_options(board);
         solver
+    }
+
+    pub fn update(&self, base_solution: &Solution) -> Solution {
+        let solution = base_solution.clone();
+        solution
     }
 
     fn get_all_options(&mut self, board: &Board) {

@@ -32,3 +32,12 @@ impl ToString for Solution {
         v.join(" ")
     }
 }
+
+impl Clone for Solution {
+    fn clone(&self) -> Solution {
+        Solution {
+            arrows: self.arrows.clone(),
+            score: self.score,
+        }
+    }
+}

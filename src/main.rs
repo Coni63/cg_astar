@@ -1,4 +1,7 @@
+use std::time::Instant;
+
 use solution::Solution;
+use solver::Solver;
 
 mod board;
 mod cell;
@@ -97,13 +100,27 @@ fn main() {
     let mut board = loader::load_board();
     let mut robots = loader::load_robots();
 
-    let mut solver = solver::Solver::new(&board);
+    let start_time = Instant::now();
 
-    let mut base_solution = Solution::from_board(&board);
+    let base_solution = Solution::from_board(&board);
+    let mut best_solution = base_solution.clone();
 
-    play(&mut board, &mut robots, &mut base_solution);
+    let solver = Solver::new(&board);
 
-    eprintln!("Score: {}", base_solution.score);
+    loop {
+        let mut solution = solver.update(&base_solution);
 
-    println!("{}", base_solution.to_string());
+        play(&mut board, &mut robots, &mut solution);
+        eprintln!("Score: {}", solution.score);
+
+        if solution.score > best_solution.score {
+            best_solution = solution.clone();
+        }
+
+        if start_time.elapsed().as_millis() > 900 {
+            break;
+        }
+    }
+
+    println!("{}", best_solution.to_string());
 }
