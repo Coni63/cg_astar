@@ -1,8 +1,18 @@
-use crate::cell::State;
+use crate::{board::Board, cell::State};
 
+#[derive(Debug, Default)]
 pub struct Solution {
     pub arrows: Vec<(usize, State)>,
     pub score: i32,
+}
+
+impl Solution {
+    pub fn from_board(board: &Board) -> Solution {
+        Solution {
+            arrows: board.get_forced_solution(),
+            score: 0,
+        }
+    }
 }
 
 impl ToString for Solution {

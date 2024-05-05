@@ -6,6 +6,7 @@ pub struct Board {
     width: usize,
     height: usize,
     modifiables: Vec<usize>,
+    forced_solution: Vec<(usize, State)>,
 }
 
 impl Board {
@@ -15,6 +16,7 @@ impl Board {
             width: 19,
             height: 10,
             modifiables: Vec::new(),
+            forced_solution: Vec::new(),
         }
     }
 
@@ -39,6 +41,88 @@ impl Board {
     }
 
     pub fn post_init(&mut self) {
+        self.set_list_modifiable();
+        eprintln!("{} modifiable cells at start", self.modifiables.len());
+        self.get_deadend();
+        self.set_list_modifiable();
+        eprintln!(
+            "{} modifiable cells without deadend",
+            self.modifiables.len()
+        );
+        self.disable_corridor();
+        self.set_list_modifiable();
+        eprintln!(
+            "{} modifiable cells without corridors",
+            self.modifiables.len()
+        );
+    }
+
+    fn get_deadend(&mut self) {
+        for idx in self.modifiables.iter() {
+            let cell = self.get_cell_idx(*idx);
+
+            let mut count = 0;
+            let mut free_direction: State = State::Empty;
+            if self.get_cell_idx(cell.up).state == State::Empty {
+                count += 1;
+            } else {
+                free_direction = State::UpArrow;
+            }
+
+            if self.get_cell_idx(cell.down).state == State::Empty {
+                count += 1;
+            } else {
+                free_direction = State::DownArrow;
+            }
+
+            if self.get_cell_idx(cell.left).state == State::Empty {
+                count += 1;
+            } else {
+                free_direction = State::LeftArrow;
+            }
+            if self.get_cell_idx(cell.right).state == State::Empty {
+                count += 1;
+            } else {
+                free_direction = State::RightArrow;
+            }
+
+            if count == 3 {
+                self.forced_solution.push((*idx, free_direction));
+                self.cells[*idx].modifiable = false;
+            }
+        }
+    }
+
+    pub fn get_forced_solution(&self) -> Vec<(usize, State)> {
+        self.forced_solution.clone()
+    }
+
+    fn disable_corridor(&mut self) {
+        let mut cells_to_modify = Vec::new();
+
+        for idx in self.modifiables.iter() {
+            let cell = self.get_cell_idx(*idx);
+
+            if self.get_cell_idx(cell.up).state == State::Empty
+                && self.get_cell_idx(cell.down).state == State::Empty
+            {
+                cells_to_modify.push(*idx);
+            }
+
+            if self.get_cell_idx(cell.left).state == State::Empty
+                && self.get_cell_idx(cell.right).state == State::Empty
+            {
+                cells_to_modify.push(*idx);
+            }
+        }
+
+        for idx in cells_to_modify.iter() {
+            self.cells[*idx].modifiable = false;
+        }
+    }
+
+    fn set_list_modifiable(&mut self) {
+        self.modifiables.clear();
         for (idx, cell) in self.cells.iter().enumerate() {
             if cell.modifiable {
                 self.modifiables.push(idx);
@@ -46,22 +130,8 @@ impl Board {
         }
     }
 
-    pub fn get_cell(&self, x: usize, y: usize) -> &Cell {
-        let idx = y * self.width + x;
-        self.get_cell_idx(idx)
-    }
-
     pub fn get_cell_idx(&self, idx: usize) -> &Cell {
         &self.cells[idx]
-    }
-
-    pub fn set_cell(&mut self, x: usize, y: usize, state: State) {
-        let idx = y * self.width + x;
-        self.set_cell_idx(idx, state)
-    }
-
-    pub fn set_cell_idx(&mut self, idx: usize, state: State) {
-        self.cells[idx].state = state;
     }
 
     pub fn apply_solution(&mut self, solution: &Solution) {

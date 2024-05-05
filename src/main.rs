@@ -6,10 +6,22 @@ mod loader;
 mod robot;
 mod solution;
 
-fn play(board: &mut board::Board, robots: &mut Vec<robot::Robot>, solution: &mut Solution) {
+fn play(board: &mut board::Board, robots: &mut [robot::Robot], solution: &mut Solution) {
     board.apply_solution(solution);
 
     solution.score = 0;
+
+    // Au premier tour Automaton2000 change de direction s'il est sur une flèche (i.e : vous pouvez changer la direction initiale d'Automaton2000 en plaçant une flèche sous lui).
+    for robot in robots.iter_mut() {
+        let cell = board.get_cell_idx(robot.idx);
+        match cell.state {
+            cell::State::UpArrow => robot.direction = robot::Direction::Up,
+            cell::State::DownArrow => robot.direction = robot::Direction::Down,
+            cell::State::LeftArrow => robot.direction = robot::Direction::Left,
+            cell::State::RightArrow => robot.direction = robot::Direction::Right,
+            _ => (),
+        }
+    }
 
     loop {
         let mut game_over = true;
@@ -59,6 +71,7 @@ fn play(board: &mut board::Board, robots: &mut Vec<robot::Robot>, solution: &mut
                     "Robot {} died at ({}, {}) -- already visited",
                     robot.idx, cell.x, cell.y
                 );
+                solution.score -= 1;
                 continue;
             }
 
@@ -83,16 +96,11 @@ fn main() {
     let mut board = loader::load_board();
     let mut robots = loader::load_robots();
 
-    let mut solution = solution::Solution {
-        arrows: Vec::new(),
-        score: 0,
-    };
+    let mut base_solution = Solution::from_board(&board);
 
-    play(&mut board, &mut robots, &mut solution);
+    play(&mut board, &mut robots, &mut base_solution);
 
-    eprintln!("Score: {}", solution.score);
+    eprintln!("Score: {}", base_solution.score);
 
-    play(&mut board, &mut robots, &mut solution);
-
-    eprintln!("Score: {}", solution.score);
+    println!("{}", base_solution.to_string());
 }
