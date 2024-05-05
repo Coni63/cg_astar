@@ -102,10 +102,9 @@ fn main() {
 
     let start_time = Instant::now();
 
-    let base_solution = Solution::from_board(&board);
+    let solver = Solver::new(&mut board);
+    let base_solution = solver.get_base_solution();
     let mut best_solution = base_solution.clone();
-
-    let solver = Solver::new(&board);
 
     loop {
         let mut solution = solver.update(&base_solution);
@@ -117,7 +116,7 @@ fn main() {
             best_solution = solution.clone();
         }
 
-        if start_time.elapsed().as_millis() > 900 {
+        if start_time.elapsed().as_millis() > 9 {
             break;
         }
     }

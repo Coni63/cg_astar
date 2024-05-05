@@ -32,8 +32,6 @@ pub fn load_board() -> Board {
         }
     }
 
-    board.post_init();
-
     board
 }
 
