@@ -5,6 +5,7 @@ mod cell;
 mod loader;
 mod robot;
 mod solution;
+mod solver;
 
 fn play(board: &mut board::Board, robots: &mut [robot::Robot], solution: &mut Solution) {
     board.apply_solution(solution);
@@ -77,10 +78,10 @@ fn play(board: &mut board::Board, robots: &mut [robot::Robot], solution: &mut So
 
             robot.set_visited();
 
-            eprintln!(
-                "Robot {} at ({}, {}) facing {:?} -> ({}, {})",
-                robot.idx, cell.x, cell.y, robot.direction, next_cell.x, next_cell.y
-            );
+            // eprintln!(
+            //     "Robot {} at ({}, {}) facing {:?} -> ({}, {})",
+            //     robot.idx, cell.x, cell.y, robot.direction, next_cell.x, next_cell.y
+            // );
         }
 
         if game_over {
@@ -95,6 +96,8 @@ fn play(board: &mut board::Board, robots: &mut [robot::Robot], solution: &mut So
 fn main() {
     let mut board = loader::load_board();
     let mut robots = loader::load_robots();
+
+    let mut solver = solver::Solver::new(&board);
 
     let mut base_solution = Solution::from_board(&board);
 

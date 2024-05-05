@@ -19,8 +19,6 @@ pub fn load_board() -> Board {
         let mut input_line = String::new();
         io::stdin().read_line(&mut input_line).unwrap();
         let line = input_line.trim_matches('\n').to_string();
-        eprintln!("{}", line);
-
         for (x, c) in line.chars().enumerate() {
             match c {
                 'U' => board.setup(x, y, State::UpArrow),
@@ -45,7 +43,6 @@ pub fn load_robots() -> Vec<Robot> {
     let mut input_line = String::new();
     io::stdin().read_line(&mut input_line).unwrap();
     let robot_count = parse_input!(input_line, i32);
-    eprintln!("{} robot(s)", robot_count);
     for _ in 0..robot_count {
         let mut input_line = String::new();
         io::stdin().read_line(&mut input_line).unwrap();
@@ -59,8 +56,6 @@ pub fn load_robots() -> Vec<Robot> {
             "L" => Direction::Left,
             _ => Direction::Right,
         };
-
-        eprintln!("Robot at ({}, {}) facing {:?}", x, y, cell);
 
         robots.push(Robot::new(y * 19 + x, cell));
     }

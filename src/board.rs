@@ -40,6 +40,18 @@ impl Board {
         };
     }
 
+    pub fn get_cells(&self, only_modifiable: bool) -> Vec<&Cell> {
+        if only_modifiable {
+            let mut ans: Vec<&Cell> = Vec::new();
+            for idx in self.modifiables.iter() {
+                ans.push(&self.cells[*idx]);
+            }
+            ans
+        } else {
+            self.cells.iter().collect()
+        }
+    }
+
     pub fn post_init(&mut self) {
         self.set_list_modifiable();
         eprintln!("{} modifiable cells at start", self.modifiables.len());
