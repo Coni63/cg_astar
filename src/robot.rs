@@ -12,6 +12,7 @@ pub struct Robot {
     pub direction: Direction,
     pub initial_direction: Direction,
     pub alive: bool,
+    pub visited: [bool; 800],
 }
 
 impl Robot {
@@ -22,6 +23,7 @@ impl Robot {
             initial_idx: idx,
             initial_direction: direction.clone(),
             alive: true,
+            visited: [false; 800],
         }
     }
 
@@ -29,17 +31,26 @@ impl Robot {
         self.idx = self.initial_idx;
         self.direction = self.initial_direction.clone();
         self.alive = true;
+        self.visited = [false; 800];
     }
-}
 
-impl Clone for Robot {
-    fn clone(&self) -> Robot {
-        Robot {
-            idx: self.idx,
-            initial_idx: self.initial_idx,
-            direction: self.direction.clone(),
-            initial_direction: self.initial_direction.clone(),
-            alive: self.alive,
-        }
+    pub fn set_visited(&mut self) {
+        let offset = match self.direction {
+            Direction::Up => 0,
+            Direction::Down => 200,
+            Direction::Left => 400,
+            Direction::Right => 600,
+        };
+        self.visited[self.idx + offset] = true;
+    }
+
+    pub fn visited(&self) -> bool {
+        let offset = match self.direction {
+            Direction::Up => 0,
+            Direction::Down => 200,
+            Direction::Left => 400,
+            Direction::Right => 600,
+        };
+        self.visited[self.idx + offset]
     }
 }

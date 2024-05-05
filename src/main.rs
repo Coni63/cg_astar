@@ -46,8 +46,23 @@ fn play(board: &mut board::Board, robots: &mut Vec<robot::Robot>, solution: &mut
             // Les Automaton2000 meurent s'ils ont marchés dans le vide ou s'ils sont dans un état (position,direction) déjà visité (Les Automaton2000 ne partagent pas leur historique d'états).
             if next_cell.state == cell::State::Empty {
                 robot.alive = false;
-                eprint!("Robot {} died at ({}, {})", robot.idx, cell.x, cell.y);
+                eprintln!(
+                    "Robot {} died at ({}, {}) -- out of board",
+                    robot.idx, cell.x, cell.y
+                );
+                continue;
             }
+
+            if robot.visited() {
+                robot.alive = false;
+                eprintln!(
+                    "Robot {} died at ({}, {}) -- already visited",
+                    robot.idx, cell.x, cell.y
+                );
+                continue;
+            }
+
+            robot.set_visited();
 
             eprintln!(
                 "Robot {} at ({}, {}) facing {:?} -> ({}, {})",
@@ -61,6 +76,7 @@ fn play(board: &mut board::Board, robots: &mut Vec<robot::Robot>, solution: &mut
     }
 
     board.remove_solution(solution);
+    robots.iter_mut().for_each(|r| r.reset());
 }
 
 fn main() {
@@ -71,6 +87,10 @@ fn main() {
         arrows: Vec::new(),
         score: 0,
     };
+
+    play(&mut board, &mut robots, &mut solution);
+
+    eprintln!("Score: {}", solution.score);
 
     play(&mut board, &mut robots, &mut solution);
 
