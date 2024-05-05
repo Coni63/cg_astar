@@ -4,14 +4,16 @@ use crate::{board::Board, cell::State, solution::Solution};
 
 pub struct Solver {
     pub all_options: HashMap<usize, Vec<State>>,
-    pub base_solution: Vec<(usize, State)>,
+    pub fixed_arrows: Vec<(usize, State)>,
+    pub variant_arrows: Vec<(usize, State)>,
 }
 
 impl Solver {
     pub fn new(board: &mut Board) -> Solver {
         let mut solver = Solver {
             all_options: HashMap::new(),
-            base_solution: Vec::new(),
+            fixed_arrows: Vec::new(),
+            variant_arrows: Vec::new(),
         };
 
         solver.get_deadend(board);
@@ -22,7 +24,8 @@ impl Solver {
 
     pub fn get_base_solution(&self) -> Solution {
         Solution {
-            arrows: self.base_solution.clone(),
+            fixed_arrows: self.fixed_arrows.clone(),
+            variant_arrows: Vec::new(),
             score: 0,
         }
     }
@@ -64,15 +67,15 @@ impl Solver {
             }
 
             if count == 3 {
-                self.base_solution.push((idx, free_direction));
+                self.fixed_arrows.push((idx, free_direction));
             }
         }
 
-        for (idx, arrow) in self.base_solution.iter() {
+        for (idx, arrow) in self.fixed_arrows.iter() {
             board.force_arrow(*idx, *arrow);
         }
 
-        eprintln!("Deadend: {}", self.base_solution.len());
+        eprintln!("Deadend: {}", self.fixed_arrows.len());
     }
 
     fn disable_corridor(&mut self, board: &mut Board) {

@@ -2,14 +2,15 @@ use crate::cell::State;
 
 #[derive(Debug, Default)]
 pub struct Solution {
-    pub arrows: Vec<(usize, State)>,
+    pub fixed_arrows: Vec<(usize, State)>,
+    pub variant_arrows: Vec<(usize, State)>,
     pub score: i32,
 }
 
 impl ToString for Solution {
     fn to_string(&self) -> String {
         let mut v: Vec<String> = Vec::new();
-        for (idx, state) in &self.arrows {
+        for (idx, state) in self.fixed_arrows.iter().chain(self.variant_arrows.iter()) {
             let row = idx / 19;
             let col = idx % 19;
             let letter = match state {
@@ -27,7 +28,8 @@ impl ToString for Solution {
 impl Clone for Solution {
     fn clone(&self) -> Solution {
         Solution {
-            arrows: self.arrows.clone(),
+            variant_arrows: self.variant_arrows.clone(),
+            fixed_arrows: self.fixed_arrows.clone(),
             score: self.score,
         }
     }

@@ -50,13 +50,13 @@ impl Board {
     }
 
     pub fn apply_solution(&mut self, solution: &Solution) {
-        for (idx, state) in solution.arrows.iter() {
+        for (idx, state) in solution.variant_arrows.iter() {
             self.cells[*idx].state = *state;
         }
     }
 
     pub fn remove_solution(&mut self, solution: &Solution) {
-        for (idx, _) in solution.arrows.iter() {
+        for (idx, _) in solution.variant_arrows.iter() {
             self.cells[*idx].state = State::Free;
         }
     }
