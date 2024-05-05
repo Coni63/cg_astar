@@ -1,6 +1,6 @@
-use crate::cell::Cell;
+use crate::cell::State;
 
 pub struct Solution {
-    pub arrows: Vec<(i32, Cell)>,
+    pub arrows: Vec<(usize, State)>,
     pub score: i32,
 }

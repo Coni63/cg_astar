@@ -1,1 +1,1 @@
-`cargo run -- release < tests/1.txt`
+`cargo run --release < tests/1.txt`

@@ -1,40 +1,78 @@
-use crate::cell::Cell;
-use crate::robot::Robot;
+use crate::cell::{Cell, State};
 use crate::solution::Solution;
 
 pub struct Board {
-    pub cells: [Cell; 190],
-    pub width: usize,
-    pub height: usize,
-
-    pub robots: Vec<Robot>,
+    cells: [Cell; 190],
+    width: usize,
+    height: usize,
+    modifiables: Vec<usize>,
 }
 
 impl Board {
     pub fn new() -> Board {
         Board {
-            cells: [Cell::Empty; 190],
+            cells: [Cell::default(); 190],
             width: 19,
             height: 10,
-            robots: vec![],
+            modifiables: Vec::new(),
+        }
+    }
+
+    pub fn setup(&mut self, x: usize, y: usize, state: State) {
+        let idx = y * self.width + x;
+
+        let top_row = if y == 0 { 9 } else { y - 1 };
+        let bottom_row = if y == 9 { 0 } else { y + 1 };
+        let left_col = if x == 0 { 18 } else { x - 1 };
+        let right_col = if x == 18 { 0 } else { x + 1 };
+
+        self.cells[idx] = Cell {
+            x: x as u8,
+            y: y as u8,
+            state,
+            modifiable: state == State::Free,
+            up: top_row * self.width + x,
+            down: bottom_row * self.width + x,
+            left: y * self.width + left_col,
+            right: y * self.width + right_col,
+        };
+    }
+
+    pub fn post_init(&mut self) {
+        for (idx, cell) in self.cells.iter().enumerate() {
+            if cell.modifiable {
+                self.modifiables.push(idx);
+            }
         }
     }
 
     pub fn get_cell(&self, x: usize, y: usize) -> &Cell {
-        &self.cells[y * self.width + x]
+        let idx = y * self.width + x;
+        self.get_cell_idx(idx)
     }
 
-    pub fn set_cell(&mut self, x: usize, y: usize, cell: Cell) {
-        self.cells[y * self.width + x] = cell;
+    pub fn get_cell_idx(&self, idx: usize) -> &Cell {
+        &self.cells[idx]
     }
 
-    pub fn add_robot(&mut self, robot: Robot) {
-        self.robots.push(robot);
+    pub fn set_cell(&mut self, x: usize, y: usize, state: State) {
+        let idx = y * self.width + x;
+        self.set_cell_idx(idx, state)
+    }
+
+    pub fn set_cell_idx(&mut self, idx: usize, state: State) {
+        self.cells[idx].state = state;
     }
 
     pub fn apply_solution(&mut self, solution: &Solution) {
-        for (idx, cell) in solution.arrows.iter() {
-            self.cells[*idx as usize] = *cell;
+        for (idx, state) in solution.arrows.iter() {
+            self.cells[*idx].state = *state;
+        }
+    }
+
+    pub fn remove_solution(&mut self, solution: &Solution) {
+        for (idx, _) in solution.arrows.iter() {
+            self.cells[*idx].state = State::Free;
         }
     }
 }
@@ -45,42 +83,6 @@ impl Clone for Board {
         board.cells = self.cells;
         board.width = self.width;
         board.height = self.height;
-        board.robots = self.robots.to_vec();
         board
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_clone() {
-        let mut board = Board::new();
-        assert_eq!(board.width, 19);
-        assert_eq!(board.height, 10);
-
-        board.set_cell(0, 0, Cell::UpArrow);
-        board.add_robot(Robot::new(0, 0, Cell::UpArrow));
-
-        let mut copy = board.clone();
-
-        let solution = Solution {
-            arrows: vec![(2, Cell::DownArrow)],
-            score: 0,
-        };
-        copy.apply_solution(&solution);
-        copy.robots[0].x = 2; // change the robot that is present in both board and copy
-        copy.add_robot(Robot::new(1, 0, Cell::UpArrow)); // add a new robot to copy
-
-        assert_eq!(board.get_cell(0, 0), &Cell::UpArrow);
-        assert_eq!(board.get_cell(2, 0), &Cell::Empty);
-        assert_eq!(board.robots.len(), 1);
-        assert_eq!(board.robots[0].x, 0); // robot in board should not be changed
-
-        assert_eq!(copy.get_cell(0, 0), &Cell::UpArrow);
-        assert_eq!(copy.get_cell(2, 0), &Cell::DownArrow);
-        assert_eq!(copy.robots.len(), 2);
-        assert_eq!(copy.robots[0].x, 2); // robot in copy should be changed
     }
 }
