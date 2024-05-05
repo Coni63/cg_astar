@@ -37,18 +37,3 @@ impl Default for Cell {
         }
     }
 }
-
-impl ToString for Cell {
-    fn to_string(&self) -> String {
-        let dir = match self.state {
-            State::Empty => "#".to_string(),
-            State::UpArrow => "U".to_string(),
-            State::DownArrow => "D".to_string(),
-            State::LeftArrow => "L".to_string(),
-            State::RightArrow => "R".to_string(),
-            State::Free => ".".to_string(),
-        };
-
-        format!("{} {} {}", self.x, self.y, dir)
-    }
-}
