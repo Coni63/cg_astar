@@ -1,5 +1,10 @@
 use std::collections::HashMap;
 
+use rand::{
+    distributions::{Distribution, Uniform},
+    Rng,
+};
+
 use crate::{board::Board, cell::State, solution::Solution};
 
 pub struct Solver {
@@ -31,7 +36,24 @@ impl Solver {
     }
 
     pub fn update(&self, base_solution: &Solution) -> Solution {
-        let solution = base_solution.clone();
+        let mut rng = rand::thread_rng();
+
+        let mut solution = base_solution.clone();
+
+        for (idx, dir) in self.all_options.iter() {
+            if dir.len() == 2 {
+                let sols = Uniform::from(0..2);
+                solution
+                    .variant_arrows
+                    .push((*idx, dir[sols.sample(&mut rng)]));
+            } else if rng.gen::<f64>() < 0.5 {
+                let n = dir.len();
+                let i = Uniform::from(0..n);
+                solution
+                    .variant_arrows
+                    .push((*idx, dir[i.sample(&mut rng)]));
+            }
+        }
         solution
     }
 
@@ -133,9 +155,9 @@ impl Solver {
             self.all_options.insert(idx, dir);
         }
 
-        eprintln!("All options: {}", self.all_options.len());
-        for (idx, dir) in self.all_options.iter() {
-            eprintln!("{}: {:?}", idx, dir);
-        }
+        // eprintln!("All options: {}", self.all_options.len());
+        // for (idx, dir) in self.all_options.iter() {
+        //     eprintln!("{}: {:?}", idx, dir);
+        // }
     }
 }

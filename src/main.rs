@@ -62,19 +62,19 @@ fn play(board: &mut board::Board, robots: &mut [robot::Robot], solution: &mut So
             // Les Automaton2000 meurent s'ils ont marchés dans le vide ou s'ils sont dans un état (position,direction) déjà visité (Les Automaton2000 ne partagent pas leur historique d'états).
             if next_cell.state == cell::State::Empty {
                 robot.alive = false;
-                eprintln!(
-                    "Robot {} died at ({}, {}) -- out of board",
-                    robot.idx, cell.x, cell.y
-                );
+                // eprintln!(
+                //     "Robot {} died at ({}, {}) -- out of board",
+                //     robot.idx, cell.x, cell.y
+                // );
                 continue;
             }
 
             if robot.visited() {
                 robot.alive = false;
-                eprintln!(
-                    "Robot {} died at ({}, {}) -- already visited",
-                    robot.idx, cell.x, cell.y
-                );
+                // eprintln!(
+                //     "Robot {} died at ({}, {}) -- already visited",
+                //     robot.idx, cell.x, cell.y
+                // );
                 solution.score -= 1;
                 continue;
             }
@@ -106,20 +106,24 @@ fn main() {
     let base_solution = solver.get_base_solution();
     let mut best_solution = base_solution.clone();
 
+    eprintln!("Time: {:?}", start_time.elapsed().as_millis());
+
     loop {
         let mut solution = solver.update(&base_solution);
 
         play(&mut board, &mut robots, &mut solution);
-        eprintln!("Score: {}", solution.score);
+        // eprintln!("Score: {}", solution.score);
 
         if solution.score > best_solution.score {
+            println!("New Best Score: {}", best_solution.score);
             best_solution = solution.clone();
         }
 
-        if start_time.elapsed().as_millis() > 9 {
+        if start_time.elapsed().as_millis() > 900 {
             break;
         }
     }
 
+    println!("Best Score: {}", best_solution.score);
     println!("{}", best_solution.to_string());
 }
