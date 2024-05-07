@@ -1,5 +1,6 @@
 use std::time::Instant;
 
+use rand::Rng;
 use solution::Solution;
 use solver::Solver;
 
@@ -10,10 +11,10 @@ mod robot;
 mod solution;
 mod solver;
 
-fn play(board: &mut board::Board, robots: &mut [robot::Robot], solution: &mut Solution) {
-    board.apply_solution(solution);
+fn play(board: &mut board::Board, robots: &mut [robot::Robot], solution: &Solution) -> i32 {
+    let mut score = 0;
 
-    solution.score = 0;
+    board.apply_solution(solution);
 
     // Au premier tour Automaton2000 change de direction s'il est sur une flèche (i.e : vous pouvez changer la direction initiale d'Automaton2000 en plaçant une flèche sous lui).
     for robot in robots.iter_mut() {
@@ -37,7 +38,7 @@ fn play(board: &mut board::Board, robots: &mut [robot::Robot], solution: &mut So
             game_over = false;
 
             // Le score est incrémenté de 1 pour chaque robot en vie.
-            solution.score += 1;
+            score += 1;
 
             // Les Automaton2000 avancent d'une case dans la direction vers laquelle ils font face.
             let cell = board.get_cell_idx(robot.idx);
@@ -75,7 +76,7 @@ fn play(board: &mut board::Board, robots: &mut [robot::Robot], solution: &mut So
                 //     "Robot {} died at ({}, {}) -- already visited",
                 //     robot.idx, cell.x, cell.y
                 // );
-                solution.score -= 1;
+                score -= 1;
                 continue;
             }
 
@@ -94,30 +95,45 @@ fn play(board: &mut board::Board, robots: &mut [robot::Robot], solution: &mut So
 
     board.remove_solution(solution);
     robots.iter_mut().for_each(|r| r.reset());
+
+    score
 }
 
 fn main() {
+    let mut rng = rand::thread_rng();
     let mut board = loader::load_board();
     let mut robots = loader::load_robots();
 
     let start_time = Instant::now();
 
-    let solver = Solver::new(&mut board);
-    let base_solution = solver.get_base_solution();
+    let mut solver = Solver::new(&mut board);
+
+    let mut base_solution = solver.get_base_solution();
+    base_solution.score = play(&mut board, &mut robots, &base_solution);
+
     let mut best_solution = base_solution.clone();
+    let mut curr_solution = base_solution.clone();
 
     eprintln!("Time: {:?}", start_time.elapsed().as_millis());
 
     loop {
-        let mut solution = solver.update(&base_solution);
+        solver.update(&mut curr_solution);
 
-        play(&mut board, &mut robots, &mut solution);
+        curr_solution.score = play(&mut board, &mut robots, &curr_solution);
         // eprintln!("Score: {}", solution.score);
 
-        if solution.score > best_solution.score {
-            println!("New Best Score: {}", best_solution.score);
-            best_solution = solution.clone();
+        let force_update = rng.gen::<f64>() < 0.1;
+        if curr_solution.score > base_solution.score || force_update {
+            eprintln!("Update: {} -> {}", base_solution.score, curr_solution.score);
+            base_solution = curr_solution.clone();
         }
+
+        if curr_solution.score > best_solution.score {
+            eprintln!("Best: {} -> {}", best_solution.score, curr_solution.score);
+            best_solution = curr_solution.clone();
+        }
+
+        curr_solution = base_solution.clone();
 
         if start_time.elapsed().as_millis() > 900 {
             break;

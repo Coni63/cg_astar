@@ -8,53 +8,72 @@ use rand::{
 use crate::{board::Board, cell::State, solution::Solution};
 
 pub struct Solver {
-    pub all_options: HashMap<usize, Vec<State>>,
+    pub all_options: HashMap<i32, Vec<State>>,
+    pub array_keys_options: Vec<i32>,
     pub fixed_arrows: Vec<(usize, State)>,
     pub variant_arrows: Vec<(usize, State)>,
+    rng: rand::rngs::ThreadRng,
 }
 
 impl Solver {
     pub fn new(board: &mut Board) -> Solver {
         let mut solver = Solver {
             all_options: HashMap::new(),
+            array_keys_options: Vec::new(),
             fixed_arrows: Vec::new(),
             variant_arrows: Vec::new(),
+            rng: rand::thread_rng(),
         };
-
         solver.get_deadend(board);
         solver.disable_corridor(board);
         solver.get_all_options(board);
         solver
     }
 
-    pub fn get_base_solution(&self) -> Solution {
-        Solution {
+    pub fn get_base_solution(&mut self) -> Solution {
+        let mut solution = Solution {
             fixed_arrows: self.fixed_arrows.clone(),
             variant_arrows: Vec::new(),
             score: 0,
-        }
-    }
+        };
 
-    pub fn update(&self, base_solution: &Solution) -> Solution {
-        let mut rng = rand::thread_rng();
-
-        let mut solution = base_solution.clone();
-
-        for (idx, dir) in self.all_options.iter() {
+        for idx in self.array_keys_options.iter() {
+            let dir = self.all_options.get(idx).unwrap();
             if dir.len() == 2 {
                 let sols = Uniform::from(0..2);
                 solution
                     .variant_arrows
-                    .push((*idx, dir[sols.sample(&mut rng)]));
-            } else if rng.gen::<f64>() < 0.5 {
+                    .push((*idx as usize, dir[sols.sample(&mut self.rng)]));
+            } else if self.rng.gen::<f64>() < 0.5 {
                 let n = dir.len();
                 let i = Uniform::from(0..n);
                 solution
                     .variant_arrows
-                    .push((*idx, dir[i.sample(&mut rng)]));
+                    .push((*idx as usize, dir[i.sample(&mut self.rng)]));
+            } else {
+                solution.variant_arrows.push((*idx as usize, State::Free));
             }
         }
+
         solution
+    }
+
+    pub fn update(&self, solution: &mut Solution) {
+        let mut rng = rand::thread_rng();
+        let n = rng.gen_range(0..self.array_keys_options.len());
+
+        let idx = self.array_keys_options[n];
+        let dir = self.all_options.get(&idx).unwrap();
+        if dir.len() == 2 {
+            let sols = Uniform::from(0..2);
+            solution.variant_arrows[n] = (idx as usize, dir[sols.sample(&mut rng)]);
+        } else if rng.gen::<f64>() < 0.5 {
+            let n = dir.len();
+            let i = Uniform::from(0..n);
+            solution.variant_arrows[n] = (idx as usize, dir[i.sample(&mut rng)]);
+        } else {
+            solution.variant_arrows[n] = (idx as usize, State::Free);
+        }
     }
 
     fn get_deadend(&mut self, board: &mut Board) {
@@ -152,7 +171,8 @@ impl Solver {
                 dir.push(State::DownArrow);
             }
 
-            self.all_options.insert(idx, dir);
+            self.array_keys_options.push(idx as i32);
+            self.all_options.insert(idx as i32, dir);
         }
 
         // eprintln!("All options: {}", self.all_options.len());
