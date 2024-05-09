@@ -35,15 +35,12 @@ fn play(board: &mut Board, robots: &mut [Robot], solution: &Solution, details: b
             State::RightArrow => robot.direction = Direction::Right,
             _ => (),
         }
+        robot.set_visited();
     }
 
     loop {
         let mut game_over = true;
-        for robot in robots.iter_mut() {
-            if !robot.alive {
-                continue;
-            }
-
+        for robot in robots.iter_mut().filter(|r| r.alive) {
             game_over = false;
 
             // Le score est incrémenté de 1 pour chaque robot en vie.
@@ -75,7 +72,7 @@ fn play(board: &mut Board, robots: &mut [Robot], solution: &Solution, details: b
                 if details {
                     eprintln!(
                         "Robot {} died at ({}, {}) -- empty cell",
-                        robot.idx, cell.x, cell.y
+                        robot.id, cell.x, cell.y
                     );
                 }
                 continue;
@@ -86,21 +83,24 @@ fn play(board: &mut Board, robots: &mut [Robot], solution: &Solution, details: b
                 if details {
                     eprintln!(
                         "Robot {} died at ({}, {}) -- already visited",
-                        robot.idx, cell.x, cell.y
+                        robot.id, cell.x, cell.y
                     );
                 }
-                score -= 1;
                 continue;
             }
 
             robot.set_visited();
 
-            if details {
-                eprintln!(
-                    "Robot {} at ({}, {}) facing {:?} -> ({}, {})",
-                    robot.idx, cell.x, cell.y, robot.direction, next_cell.x, next_cell.y
-                );
-            }
+            // if details {
+            //     eprintln!(
+            //         "Robot {} at ({}, {}) facing {:?} -> ({}, {}) | {:?}",
+            //         robot.id, cell.x, cell.y, robot.direction, next_cell.x, next_cell.y, score
+            //     );
+            // }
+        }
+
+        if details {
+            eprintln!("Score: {}", score);
         }
 
         if game_over {

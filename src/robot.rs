@@ -7,6 +7,7 @@ pub enum Direction {
 }
 
 pub struct Robot {
+    pub id: i8,
     pub idx: usize,
     pub initial_idx: usize,
     pub direction: Direction,
@@ -16,8 +17,9 @@ pub struct Robot {
 }
 
 impl Robot {
-    pub fn new(idx: usize, direction: Direction) -> Robot {
+    pub fn new(id: i8, idx: usize, direction: Direction) -> Robot {
         Robot {
+            id,
             idx,
             direction: direction.clone(),
             initial_idx: idx,

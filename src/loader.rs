@@ -41,7 +41,7 @@ pub fn load_robots() -> Vec<Robot> {
     let mut input_line = String::new();
     io::stdin().read_line(&mut input_line).unwrap();
     let robot_count = parse_input!(input_line, i32);
-    for _ in 0..robot_count {
+    for i in 0..robot_count {
         let mut input_line = String::new();
         io::stdin().read_line(&mut input_line).unwrap();
         let inputs = input_line.split(' ').collect::<Vec<_>>();
@@ -55,7 +55,7 @@ pub fn load_robots() -> Vec<Robot> {
             _ => Direction::Right,
         };
 
-        robots.push(Robot::new(y * 19 + x, cell));
+        robots.push(Robot::new(i as i8, y * 19 + x, cell));
     }
     robots
 }
