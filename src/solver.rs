@@ -59,6 +59,10 @@ impl Solver {
     }
 
     pub fn update(&self, solution: &mut Solution) {
+        if self.array_keys_options.is_empty() {
+            return;
+        }
+
         let mut rng = rand::thread_rng();
         let n = rng.gen_range(0..self.array_keys_options.len());
 
@@ -68,8 +72,8 @@ impl Solver {
             let sols = Uniform::from(0..2);
             solution.variant_arrows[n] = (idx as usize, dir[sols.sample(&mut rng)]);
         } else if rng.gen::<f64>() < 0.5 {
-            let n = dir.len();
-            let i = Uniform::from(0..n);
+            let k = dir.len();
+            let i = Uniform::from(0..k);
             solution.variant_arrows[n] = (idx as usize, dir[i.sample(&mut rng)]);
         } else {
             solution.variant_arrows[n] = (idx as usize, State::Free);
@@ -155,19 +159,19 @@ impl Solver {
 
             let mut dir: Vec<State> = Vec::new();
 
-            if board.get_cell_idx(cell.right).state == State::Free {
+            if board.get_cell_idx(cell.right).state != State::Empty {
                 dir.push(State::RightArrow);
             }
 
-            if board.get_cell_idx(cell.left).state == State::Free {
+            if board.get_cell_idx(cell.left).state != State::Empty {
                 dir.push(State::LeftArrow);
             }
 
-            if board.get_cell_idx(cell.up).state == State::Free {
+            if board.get_cell_idx(cell.up).state != State::Empty {
                 dir.push(State::UpArrow);
             }
 
-            if board.get_cell_idx(cell.down).state == State::Free {
+            if board.get_cell_idx(cell.down).state != State::Empty {
                 dir.push(State::DownArrow);
             }
 
@@ -175,9 +179,11 @@ impl Solver {
             self.all_options.insert(idx as i32, dir);
         }
 
-        // eprintln!("All options: {}", self.all_options.len());
-        // for (idx, dir) in self.all_options.iter() {
-        //     eprintln!("{}: {:?}", idx, dir);
-        // }
+        eprintln!("{:?}", self.array_keys_options);
+
+        eprintln!("All options: {}", self.all_options.len());
+        for (idx, dir) in self.all_options.iter() {
+            eprintln!("{}: {:?}", idx, dir);
+        }
     }
 }

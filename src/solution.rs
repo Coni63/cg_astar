@@ -17,7 +17,8 @@ impl ToString for Solution {
                 State::UpArrow => "U",
                 State::DownArrow => "D",
                 State::LeftArrow => "L",
-                _ => "R",
+                State::RightArrow => "R",
+                _ => continue,
             };
             v.push(format!("{} {} {}", col, row, letter));
         }

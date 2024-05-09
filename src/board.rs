@@ -16,6 +16,23 @@ impl Board {
         }
     }
 
+    pub fn show(&self) {
+        for i in 0..10 {
+            for j in 0..19 {
+                let letter = match self.cells[i * 19 + j].state {
+                    State::UpArrow => "^",
+                    State::DownArrow => "v",
+                    State::LeftArrow => "<",
+                    State::RightArrow => ">",
+                    State::Free => ".",
+                    State::Empty => "#",
+                };
+                eprint!("{}", letter);
+            }
+            eprintln!();
+        }
+    }
+
     pub fn setup(&mut self, x: usize, y: usize, state: State) {
         let idx = y * self.width + x;
 

@@ -1,6 +1,9 @@
 use std::time::Instant;
 
+use board::Board;
+use cell::State;
 use rand::Rng;
+use robot::{Direction, Robot};
 use solution::Solution;
 use solver::Solver;
 
@@ -11,19 +14,25 @@ mod robot;
 mod solution;
 mod solver;
 
-fn play(board: &mut board::Board, robots: &mut [robot::Robot], solution: &Solution) -> i32 {
+fn play(board: &mut Board, robots: &mut [Robot], solution: &Solution, details: bool) -> i32 {
     let mut score = 0;
 
-    board.apply_solution(solution);
+    if details {
+        board.show();
+        board.apply_solution(solution);
+        board.show();
+    } else {
+        board.apply_solution(solution);
+    }
 
     // Au premier tour Automaton2000 change de direction s'il est sur une flèche (i.e : vous pouvez changer la direction initiale d'Automaton2000 en plaçant une flèche sous lui).
     for robot in robots.iter_mut() {
         let cell = board.get_cell_idx(robot.idx);
         match cell.state {
-            cell::State::UpArrow => robot.direction = robot::Direction::Up,
-            cell::State::DownArrow => robot.direction = robot::Direction::Down,
-            cell::State::LeftArrow => robot.direction = robot::Direction::Left,
-            cell::State::RightArrow => robot.direction = robot::Direction::Right,
+            State::UpArrow => robot.direction = Direction::Up,
+            State::DownArrow => robot.direction = Direction::Down,
+            State::LeftArrow => robot.direction = Direction::Left,
+            State::RightArrow => robot.direction = Direction::Right,
             _ => (),
         }
     }
@@ -43,49 +52,55 @@ fn play(board: &mut board::Board, robots: &mut [robot::Robot], solution: &Soluti
             // Les Automaton2000 avancent d'une case dans la direction vers laquelle ils font face.
             let cell = board.get_cell_idx(robot.idx);
             let next_idx = match robot.direction {
-                robot::Direction::Up => cell.up,
-                robot::Direction::Down => cell.down,
-                robot::Direction::Left => cell.left,
-                robot::Direction::Right => cell.right,
+                Direction::Up => cell.up,
+                Direction::Down => cell.down,
+                Direction::Left => cell.left,
+                Direction::Right => cell.right,
             };
             robot.idx = next_idx;
 
             // Les Automaton2000 changent de direction s'ils sont sur une flèche.
             let next_cell = board.get_cell_idx(next_idx);
             match next_cell.state {
-                cell::State::UpArrow => robot.direction = robot::Direction::Up,
-                cell::State::DownArrow => robot.direction = robot::Direction::Down,
-                cell::State::LeftArrow => robot.direction = robot::Direction::Left,
-                cell::State::RightArrow => robot.direction = robot::Direction::Right,
+                cell::State::UpArrow => robot.direction = Direction::Up,
+                cell::State::DownArrow => robot.direction = Direction::Down,
+                cell::State::LeftArrow => robot.direction = Direction::Left,
+                cell::State::RightArrow => robot.direction = Direction::Right,
                 _ => (),
             }
 
             // Les Automaton2000 meurent s'ils ont marchés dans le vide ou s'ils sont dans un état (position,direction) déjà visité (Les Automaton2000 ne partagent pas leur historique d'états).
             if next_cell.state == cell::State::Empty {
                 robot.alive = false;
-                // eprintln!(
-                //     "Robot {} died at ({}, {}) -- out of board",
-                //     robot.idx, cell.x, cell.y
-                // );
+                if details {
+                    eprintln!(
+                        "Robot {} died at ({}, {}) -- empty cell",
+                        robot.idx, cell.x, cell.y
+                    );
+                }
                 continue;
             }
 
             if robot.visited() {
                 robot.alive = false;
-                // eprintln!(
-                //     "Robot {} died at ({}, {}) -- already visited",
-                //     robot.idx, cell.x, cell.y
-                // );
+                if details {
+                    eprintln!(
+                        "Robot {} died at ({}, {}) -- already visited",
+                        robot.idx, cell.x, cell.y
+                    );
+                }
                 score -= 1;
                 continue;
             }
 
             robot.set_visited();
 
-            // eprintln!(
-            //     "Robot {} at ({}, {}) facing {:?} -> ({}, {})",
-            //     robot.idx, cell.x, cell.y, robot.direction, next_cell.x, next_cell.y
-            // );
+            if details {
+                eprintln!(
+                    "Robot {} at ({}, {}) facing {:?} -> ({}, {})",
+                    robot.idx, cell.x, cell.y, robot.direction, next_cell.x, next_cell.y
+                );
+            }
         }
 
         if game_over {
@@ -109,7 +124,7 @@ fn main() {
     let mut solver = Solver::new(&mut board);
 
     let mut base_solution = solver.get_base_solution();
-    base_solution.score = play(&mut board, &mut robots, &base_solution);
+    base_solution.score = play(&mut board, &mut robots, &base_solution, false);
 
     let mut best_solution = base_solution.clone();
     let mut curr_solution = base_solution.clone();
@@ -119,12 +134,12 @@ fn main() {
     loop {
         solver.update(&mut curr_solution);
 
-        curr_solution.score = play(&mut board, &mut robots, &curr_solution);
+        curr_solution.score = play(&mut board, &mut robots, &curr_solution, false);
         // eprintln!("Score: {}", solution.score);
 
         let force_update = rng.gen::<f64>() < 0.1;
         if curr_solution.score > base_solution.score || force_update {
-            eprintln!("Update: {} -> {}", base_solution.score, curr_solution.score);
+            // eprintln!("Update: {} -> {}", base_solution.score, curr_solution.score);
             base_solution = curr_solution.clone();
         }
 
@@ -140,6 +155,8 @@ fn main() {
         }
     }
 
-    println!("Best Score: {}", best_solution.score);
+    play(&mut board, &mut robots, &best_solution, true);
+
+    eprintln!("Best Score: {}", best_solution.score);
     println!("{}", best_solution.to_string());
 }
