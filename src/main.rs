@@ -99,10 +99,6 @@ fn play(board: &mut Board, robots: &mut [Robot], solution: &Solution, details: b
             // }
         }
 
-        if details {
-            eprintln!("Score: {}", score);
-        }
-
         if game_over {
             break;
         }
@@ -123,40 +119,58 @@ fn main() {
 
     let mut solver = Solver::new(&mut board);
 
-    let mut base_solution = solver.get_base_solution();
-    base_solution.score = play(&mut board, &mut robots, &base_solution, false);
+    let mut all_best = Solution::default();
 
-    let mut best_solution = base_solution.clone();
-    let mut curr_solution = base_solution.clone();
+    for turn in 1..11 {
+        let end_time = turn * 95;
 
-    eprintln!("Time: {:?}", start_time.elapsed().as_millis());
+        eprintln!("New run: {}/10", turn);
+        let mut base_solution = solver.get_base_solution();
+        base_solution.score = play(&mut board, &mut robots, &base_solution, false);
 
-    loop {
-        solver.update(&mut curr_solution);
+        let mut best_solution = base_solution.clone();
+        let mut curr_solution = base_solution.clone();
 
-        curr_solution.score = play(&mut board, &mut robots, &curr_solution, false);
-        // eprintln!("Score: {}", solution.score);
+        while start_time.elapsed().as_millis() < end_time {
+            solver.update(&mut curr_solution);
 
-        let force_update = rng.gen::<f64>() < 0.1;
-        if curr_solution.score > base_solution.score || force_update {
-            // eprintln!("Update: {} -> {}", base_solution.score, curr_solution.score);
-            base_solution = curr_solution.clone();
+            curr_solution.score = play(&mut board, &mut robots, &curr_solution, false);
+            // eprintln!("Score: {}", solution.score);
+
+            let force_update = rng.gen::<f64>() < 0.1;
+            if curr_solution.score > base_solution.score || force_update {
+                // eprintln!("Update: {} -> {}", base_solution.score, curr_solution.score);
+                base_solution = curr_solution.clone();
+            }
+
+            if curr_solution.score > best_solution.score {
+                eprintln!(
+                    "Best: {} -> {} ({:?})",
+                    best_solution.score,
+                    curr_solution.score,
+                    start_time.elapsed()
+                );
+                best_solution = curr_solution.clone();
+            }
+
+            curr_solution = base_solution.clone();
         }
 
-        if curr_solution.score > best_solution.score {
-            eprintln!("Best: {} -> {}", best_solution.score, curr_solution.score);
-            best_solution = curr_solution.clone();
-        }
-
-        curr_solution = base_solution.clone();
-
-        if start_time.elapsed().as_millis() > 900 {
-            break;
+        eprintln!("Run {} best Score: {}", turn, best_solution.score);
+        if best_solution.score > all_best.score {
+            all_best = best_solution.clone();
         }
     }
 
-    play(&mut board, &mut robots, &best_solution, true);
+    // board.show();
+    // board.apply_solution(&best_solution);
+    // board.show();
+    // board.remove_solution(&best_solution);
+    // eprintln!("{}", play(&mut board, &mut robots, &best_solution, true));
+    // board.show();
 
-    eprintln!("Best Score: {}", best_solution.score);
-    println!("{}", best_solution.to_string());
+    play(&mut board, &mut robots, &all_best, true);
+
+    eprintln!("All runs best Score: {}", all_best.score);
+    println!("{}", all_best.to_string());
 }
