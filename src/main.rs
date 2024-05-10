@@ -123,6 +123,8 @@ fn main() {
 
     for turn in 1..11 {
         let end_time = turn * 95;
+        let mut temperature = 10.0;
+        let mut cooling_rate = 0.997;
 
         eprintln!("New run: {}/10", turn);
         let mut base_solution = solver.get_base_solution();
@@ -137,10 +139,17 @@ fn main() {
             curr_solution.score = play(&mut board, &mut robots, &curr_solution, false);
             // eprintln!("Score: {}", solution.score);
 
-            let force_update = rng.gen::<f64>() < 0.1;
-            if curr_solution.score > base_solution.score || force_update {
+            if curr_solution.score > base_solution.score {
                 // eprintln!("Update: {} -> {}", base_solution.score, curr_solution.score);
                 base_solution = curr_solution.clone();
+            } else {
+                let p =
+                    0.5 * ((curr_solution.score - base_solution.score) as f64 / temperature).exp();
+                // eprintln!("{} -> {} ({})", base_solution.score, curr_solution.score, p);
+                temperature *= cooling_rate;
+                if rng.gen::<f64>() < p {
+                    base_solution = curr_solution.clone();
+                }
             }
 
             if curr_solution.score > best_solution.score {
