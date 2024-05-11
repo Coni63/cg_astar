@@ -1,8 +1,12 @@
+use std::borrow::Borrow;
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use crate::cell::{Cell, State};
 use crate::solution::Solution;
 
 pub struct Board {
-    cells: [Cell; 190],
+    cells: [Rc<RefCell<Cell>>; 190],
     width: usize,
     height: usize,
 }
@@ -10,7 +14,11 @@ pub struct Board {
 impl Board {
     pub fn new() -> Board {
         Board {
-            cells: [Cell::default(); 190],
+            cells: (0..190)
+                .map(|_| Cell::default())
+                .collect::<Vec<_>>()
+                .try_into()
+                .unwrap(),
             width: 19,
             height: 10,
         }
@@ -19,7 +27,7 @@ impl Board {
     pub fn show(&self) {
         for i in 0..10 {
             for j in 0..19 {
-                let letter = match self.cells[i * 19 + j].state {
+                let letter = match self.cells[i * 19 + j].borrow().state {
                     State::UpArrow => "^",
                     State::DownArrow => "v",
                     State::LeftArrow => "<",
@@ -41,20 +49,15 @@ impl Board {
         let left_col = if x == 0 { 18 } else { x - 1 };
         let right_col = if x == 18 { 0 } else { x + 1 };
 
-        self.cells[idx] = Cell {
-            x: x as u8,
-            y: y as u8,
-            state,
-            modifiable: state == State::Free,
-            up: top_row * self.width + x,
-            down: bottom_row * self.width + x,
-            left: y * self.width + left_col,
-            right: y * self.width + right_col,
-        };
+        let mut ref_cell = self.cells[idx].borrow_mut();
+        ref_cell.x = x as u8;
+        ref_cell.y = y as u8;
+        ref_cell.state = state;
+        ref_cell.modifiable = state == State::Free;
     }
 
     pub fn get_cells(&self) -> &[Cell] {
-        &self.cells
+        &self.cells.borrow()
     }
 
     pub fn get_cell_idx(&self, idx: usize) -> &Cell {

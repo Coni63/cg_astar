@@ -1,3 +1,5 @@
+use std::{cell::RefCell, rc::Rc};
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum State {
     Empty,
@@ -23,9 +25,9 @@ pub struct Cell {
 
 impl Cell {}
 
-impl Default for Cell {
-    fn default() -> Cell {
-        Cell {
+impl Cell {
+    pub fn default() -> Rc<RefCell<Cell>> {
+        Rc::new(RefCell::new(Cell {
             state: State::Empty,
             x: 0,
             y: 0,
@@ -34,6 +36,6 @@ impl Default for Cell {
             down: 0,
             left: 0,
             right: 0,
-        }
+        }))
     }
 }
