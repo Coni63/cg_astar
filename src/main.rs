@@ -121,12 +121,12 @@ fn main() {
 
     let mut all_best = Solution::default();
 
-    for turn in 1..11 {
-        let end_time = turn * 95;
+    for turn in 1..6 {
+        let mut count = 0;
+        let end_time = turn * 195;
         let mut temperature = 10.0;
-        let mut cooling_rate = 0.997;
+        let cooling_rate = 0.998;
 
-        eprintln!("New run: {}/10", turn);
         let mut base_solution = solver.get_base_solution();
         base_solution.score = play(&mut board, &mut robots, &base_solution, false);
 
@@ -145,7 +145,6 @@ fn main() {
             } else {
                 let p =
                     0.5 * ((curr_solution.score - base_solution.score) as f64 / temperature).exp();
-                // eprintln!("{} -> {} ({})", base_solution.score, curr_solution.score, p);
                 temperature *= cooling_rate;
                 if rng.gen::<f64>() < p {
                     base_solution = curr_solution.clone();
@@ -153,19 +152,23 @@ fn main() {
             }
 
             if curr_solution.score > best_solution.score {
-                eprintln!(
-                    "Best: {} -> {} ({:?})",
-                    best_solution.score,
-                    curr_solution.score,
-                    start_time.elapsed()
-                );
+                // eprintln!(
+                //     "Best: {} -> {} ({:?})",
+                //     best_solution.score,
+                //     curr_solution.score,
+                //     start_time.elapsed()
+                // );
                 best_solution = curr_solution.clone();
             }
 
             curr_solution = base_solution.clone();
+            count += 1;
         }
 
-        eprintln!("Run {} best Score: {}", turn, best_solution.score);
+        eprintln!(
+            "Run {} best Score: {} ({} runs)",
+            turn, best_solution.score, count
+        );
         if best_solution.score > all_best.score {
             all_best = best_solution.clone();
         }

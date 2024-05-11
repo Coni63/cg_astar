@@ -69,12 +69,11 @@ impl Solver {
         let idx = self.array_keys_options[n];
         let dir = self.all_options.get(&idx).unwrap();
         if dir.len() == 2 {
-            let sols = Uniform::from(0..2);
-            solution.variant_arrows[n] = (idx as usize, dir[sols.sample(&mut rng)]);
+            let idx_direction = rng.gen_range(0..2);
+            solution.variant_arrows[n] = (idx as usize, dir[idx_direction]);
         } else if rng.gen::<f64>() < 0.5 {
             let k = dir.len();
-            let i = Uniform::from(0..k);
-            solution.variant_arrows[n] = (idx as usize, dir[i.sample(&mut rng)]);
+            solution.variant_arrows[n] = (idx as usize, dir[rng.gen_range(0..k)]);
         } else {
             solution.variant_arrows[n] = (idx as usize, State::Free);
         }
@@ -179,11 +178,9 @@ impl Solver {
             self.all_options.insert(idx as i32, dir);
         }
 
-        eprintln!("{:?}", self.array_keys_options);
-
-        eprintln!("All options: {}", self.all_options.len());
-        for (idx, dir) in self.all_options.iter() {
-            eprintln!("{}: {:?}", idx, dir);
-        }
+        // eprintln!("All options: {}", self.all_options.len());
+        // for (idx, dir) in self.all_options.iter() {
+        //     eprintln!("{}: {:?}", idx, dir);
+        // }
     }
 }
