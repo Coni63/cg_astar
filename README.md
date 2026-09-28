@@ -71,6 +71,17 @@ Une ligne composée de triplets de la forme `X Y DIR` avec `X Y` deux entiers et
 - Nombre de caractères maximum autorisé pour une sortie : `10 000`.
 - Temps de réponse ≤ `1s`.
 
+## Algorithme (`src/solver.rs`)
+
+Recuit simulé sur la grille de flèches, ~900 ms au total :
+
+- **Prétraitement** : flèche forcée dans les culs-de-sac ; sur chaque cellule, seules les flèches ne pointant pas vers le vide sont proposées (les demi-tours dans les couloirs restent autorisés, ils rapportent des points).
+- **Simulation rapide** : table de transitions `état (cellule, direction) -> état suivant`, mise à jour en O(1) quand une cellule change.
+- **Évaluation incrémentale** : seuls les robots passant par une cellule modifiée sont resimulés, et uniquement à partir du premier pas où ils l'atteignent.
+- **Symétrie** : si la carte et les robots sont invariants par rotation de 180° (sur le tore), la phase d'exploration ne cherche que des solutions symétriques (espace de recherche et coût de simulation divisés par deux). Les symétries miroir ont été testées : elles dégradent fortement le score.
+- **Composantes connexes** : le meilleur état est conservé par composante indépendante et recombiné entre tous les recuits.
+- **Planning** : 2 recuits d'exploration depuis la grille vide (60 % du temps, T 10 → 2), puis un raffinement non symétrique de la meilleure solution (T 3 → 2).
+
 ## Structure du projet
 
 ```
@@ -87,7 +98,7 @@ cargo build --release
 cargo run --release < tests/01-simple.txt
 ```
 
-Le score final et le déroulé de la résolution (recuit simulé sur 5 runs de ~195ms) sont affichés sur `stderr`, la solution (liste de flèches à placer) sur `stdout`.
+Le score final et le déroulé de la résolution sont affichés sur `stderr`, la solution (liste de flèches à placer) sur `stdout`. Le score est recalculé par le simulateur de référence de `main.rs` (un `WARNING` est affiché en cas d'écart).
 
 ## Lancer les tests
 

@@ -1,11 +1,283 @@
+use std::collections::HashMap;
+use std::io;
 use std::time::Instant;
 
-use crate::{
-    board::Board,
-    cell::State,
-    robot::{Direction, Robot},
-    solution::Solution,
-};
+macro_rules! parse_input {
+    ($x:expr, $t:ident) => {
+        $x.trim().parse::<$t>().unwrap()
+    };
+}
+
+pub fn load_board() -> Board {
+    let mut board = Board::new();
+
+    for y in 0..10 {
+        let mut input_line = String::new();
+        io::stdin().read_line(&mut input_line).unwrap();
+        let line = input_line.trim_matches('\n').to_string();
+        for (x, c) in line.chars().enumerate() {
+            match c {
+                'U' => board.setup(x, y, State::UpArrow),
+                'D' => board.setup(x, y, State::DownArrow),
+                'L' => board.setup(x, y, State::LeftArrow),
+                'R' => board.setup(x, y, State::RightArrow),
+                '.' => board.setup(x, y, State::Free),
+                '#' => board.setup(x, y, State::Empty),
+                _ => (),
+            };
+        }
+    }
+
+    board
+}
+
+pub fn load_robots() -> Vec<Robot> {
+    let mut robots: Vec<Robot> = Vec::new();
+
+    let mut input_line = String::new();
+    io::stdin().read_line(&mut input_line).unwrap();
+    let robot_count = parse_input!(input_line, i32);
+    for i in 0..robot_count {
+        let mut input_line = String::new();
+        io::stdin().read_line(&mut input_line).unwrap();
+        let inputs = input_line.split(' ').collect::<Vec<_>>();
+        let x = parse_input!(inputs[0], usize);
+        let y = parse_input!(inputs[1], usize);
+
+        let cell = match inputs[2].trim() {
+            "U" => Direction::Up,
+            "D" => Direction::Down,
+            "L" => Direction::Left,
+            _ => Direction::Right,
+        };
+
+        robots.push(Robot::new(i as i8, y * 19 + x, cell));
+    }
+    robots
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+#[derive(Debug, Default)]
+pub struct Solution {
+    pub fixed_arrows: Vec<(usize, State)>,
+    pub variant_arrows: Vec<(usize, State)>,
+    pub score: i32,
+}
+
+impl ToString for Solution {
+    fn to_string(&self) -> String {
+        let mut v: Vec<String> = Vec::new();
+        for (idx, state) in self.fixed_arrows.iter().chain(self.variant_arrows.iter()) {
+            let row = idx / 19;
+            let col = idx % 19;
+            let letter = match state {
+                State::UpArrow => "U",
+                State::DownArrow => "D",
+                State::LeftArrow => "L",
+                State::RightArrow => "R",
+                _ => continue,
+            };
+            v.push(format!("{} {} {}", col, row, letter));
+        }
+        v.join(" ")
+    }
+}
+
+impl Clone for Solution {
+    fn clone(&self) -> Solution {
+        Solution {
+            variant_arrows: self.variant_arrows.clone(),
+            fixed_arrows: self.fixed_arrows.clone(),
+            score: self.score,
+        }
+    }
+}
+
+pub struct Robot {
+    pub id: i8,
+    pub idx: usize,
+    pub initial_idx: usize,
+    pub direction: Direction,
+    pub initial_direction: Direction,
+    pub alive: bool,
+    pub visited: [bool; 800],
+}
+
+impl Robot {
+    pub fn new(id: i8, idx: usize, direction: Direction) -> Robot {
+        Robot {
+            id,
+            idx,
+            direction: direction.clone(),
+            initial_idx: idx,
+            initial_direction: direction.clone(),
+            alive: true,
+            visited: [false; 800],
+        }
+    }
+
+    pub fn reset(&mut self) {
+        self.idx = self.initial_idx;
+        self.direction = self.initial_direction.clone();
+        self.alive = true;
+        self.visited = [false; 800];
+    }
+
+    pub fn set_visited(&mut self) {
+        let offset = match self.direction {
+            Direction::Up => 0,
+            Direction::Down => 200,
+            Direction::Left => 400,
+            Direction::Right => 600,
+        };
+        self.visited[self.idx + offset] = true;
+    }
+
+    pub fn visited(&self) -> bool {
+        let offset = match self.direction {
+            Direction::Up => 0,
+            Direction::Down => 200,
+            Direction::Left => 400,
+            Direction::Right => 600,
+        };
+        self.visited[self.idx + offset]
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum State {
+    Empty,
+    UpArrow,
+    DownArrow,
+    LeftArrow,
+    RightArrow,
+    Free,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct Cell {
+    pub x: u8,
+    pub y: u8,
+    pub state: State,
+    pub modifiable: bool,
+
+    pub up: usize,
+    pub down: usize,
+    pub left: usize,
+    pub right: usize,
+}
+
+impl Cell {}
+
+impl Default for Cell {
+    fn default() -> Cell {
+        Cell {
+            state: State::Empty,
+            x: 0,
+            y: 0,
+            modifiable: false,
+            up: 0,
+            down: 0,
+            left: 0,
+            right: 0,
+        }
+    }
+}
+
+pub struct Board {
+    cells: [Cell; 190],
+    width: usize,
+    height: usize,
+}
+
+impl Board {
+    pub fn new() -> Board {
+        Board {
+            cells: [Cell::default(); 190],
+            width: 19,
+            height: 10,
+        }
+    }
+
+    pub fn show(&self) {
+        for i in 0..10 {
+            for j in 0..19 {
+                let letter = match self.cells[i * 19 + j].state {
+                    State::UpArrow => "^",
+                    State::DownArrow => "v",
+                    State::LeftArrow => "<",
+                    State::RightArrow => ">",
+                    State::Free => ".",
+                    State::Empty => "#",
+                };
+                eprint!("{}", letter);
+            }
+            eprintln!();
+        }
+    }
+
+    pub fn setup(&mut self, x: usize, y: usize, state: State) {
+        let idx = y * self.width + x;
+
+        let top_row = if y == 0 { 9 } else { y - 1 };
+        let bottom_row = if y == 9 { 0 } else { y + 1 };
+        let left_col = if x == 0 { 18 } else { x - 1 };
+        let right_col = if x == 18 { 0 } else { x + 1 };
+
+        self.cells[idx] = Cell {
+            x: x as u8,
+            y: y as u8,
+            state,
+            modifiable: state == State::Free,
+            up: top_row * self.width + x,
+            down: bottom_row * self.width + x,
+            left: y * self.width + left_col,
+            right: y * self.width + right_col,
+        };
+    }
+
+    pub fn get_cells(&self) -> &[Cell] {
+        &self.cells
+    }
+
+    pub fn get_cell_idx(&self, idx: usize) -> &Cell {
+        &self.cells[idx]
+    }
+
+    pub fn force_arrow(&mut self, idx: usize, state: State) {
+        self.cells[idx].state = state;
+        self.cells[idx].modifiable = false;
+    }
+
+    pub fn apply_solution(&mut self, solution: &Solution) {
+        for (idx, state) in solution.variant_arrows.iter() {
+            self.cells[*idx].state = *state;
+        }
+    }
+
+    pub fn remove_solution(&mut self, solution: &Solution) {
+        for (idx, _) in solution.variant_arrows.iter() {
+            self.cells[*idx].state = State::Free;
+        }
+    }
+}
+
+impl Clone for Board {
+    fn clone(&self) -> Board {
+        let mut board = Board::new();
+        board.cells = self.cells;
+        board.width = self.width;
+        board.height = self.height;
+        board
+    }
+}
 
 const W: usize = 19;
 const H: usize = 10;
@@ -694,4 +966,114 @@ impl Solver {
         eprintln!("Deadend: {}", fixed_arrows.len());
         fixed_arrows
     }
+}
+
+fn play(board: &mut Board, robots: &mut [Robot], solution: &Solution, details: bool) -> i32 {
+    let mut score = 0;
+
+    if details {
+        board.show();
+        board.apply_solution(solution);
+        board.show();
+    } else {
+        board.apply_solution(solution);
+    }
+
+    // Au premier tour Automaton2000 change de direction s'il est sur une flèche (i.e : vous pouvez changer la direction initiale d'Automaton2000 en plaçant une flèche sous lui).
+    for robot in robots.iter_mut() {
+        let cell = board.get_cell_idx(robot.idx);
+        match cell.state {
+            State::UpArrow => robot.direction = Direction::Up,
+            State::DownArrow => robot.direction = Direction::Down,
+            State::LeftArrow => robot.direction = Direction::Left,
+            State::RightArrow => robot.direction = Direction::Right,
+            _ => (),
+        }
+        robot.set_visited();
+    }
+
+    loop {
+        let mut game_over = true;
+        for robot in robots.iter_mut().filter(|r| r.alive) {
+            game_over = false;
+
+            // Le score est incrémenté de 1 pour chaque robot en vie.
+            score += 1;
+
+            // Les Automaton2000 avancent d'une case dans la direction vers laquelle ils font face.
+            let cell = board.get_cell_idx(robot.idx);
+            let next_idx = match robot.direction {
+                Direction::Up => cell.up,
+                Direction::Down => cell.down,
+                Direction::Left => cell.left,
+                Direction::Right => cell.right,
+            };
+            robot.idx = next_idx;
+
+            // Les Automaton2000 changent de direction s'ils sont sur une flèche.
+            let next_cell = board.get_cell_idx(next_idx);
+            match next_cell.state {
+                State::UpArrow => robot.direction = Direction::Up,
+                State::DownArrow => robot.direction = Direction::Down,
+                State::LeftArrow => robot.direction = Direction::Left,
+                State::RightArrow => robot.direction = Direction::Right,
+                _ => (),
+            }
+
+            // Les Automaton2000 meurent s'ils ont marchés dans le vide ou s'ils sont dans un état (position,direction) déjà visité (Les Automaton2000 ne partagent pas leur historique d'états).
+            if next_cell.state == State::Empty {
+                robot.alive = false;
+                if details {
+                    eprintln!(
+                        "Robot {} died at ({}, {}) -- empty cell",
+                        robot.id, cell.x, cell.y
+                    );
+                }
+                continue;
+            }
+
+            if robot.visited() {
+                robot.alive = false;
+                if details {
+                    eprintln!(
+                        "Robot {} died at ({}, {}) -- already visited",
+                        robot.id, cell.x, cell.y
+                    );
+                }
+                continue;
+            }
+
+            robot.set_visited();
+
+            // if details {
+            //     eprintln!(
+            //         "Robot {} at ({}, {}) facing {:?} -> ({}, {}) | {:?}",
+            //         robot.idx, cell.x, cell.y, robot.direction, next_cell.x, next_cell.y, score
+            //     );
+            // }
+        }
+
+        if game_over {
+            break;
+        }
+    }
+
+    board.remove_solution(solution);
+    robots.iter_mut().for_each(|r| r.reset());
+
+    score
+}
+
+fn main() {
+    let mut board = load_board();
+    let mut robots = load_robots();
+    // The CodinGame timer starts when the input is sent, not when the process starts
+    let start_time = Instant::now();
+
+    let mut solver = Solver::new(&mut board, &robots);
+    let solution = solver.solve(&start_time, 900.0);
+
+    eprintln!("All runs best Score: {}", solution.score);
+    eprintln!("Elapsed: {:?}", start_time.elapsed());
+    println!("{}", solution.to_string());
 }

@@ -2,7 +2,6 @@ use std::time::Instant;
 
 use board::Board;
 use cell::State;
-use rand::Rng;
 use robot::{Direction, Robot};
 use solution::Solution;
 use solver::Solver;
@@ -111,78 +110,21 @@ fn play(board: &mut Board, robots: &mut [Robot], solution: &Solution, details: b
 }
 
 fn main() {
-    let mut rng = rand::thread_rng();
     let mut board = loader::load_board();
     let mut robots = loader::load_robots();
-
+    // The CodinGame timer starts when the input is sent, not when the process starts
     let start_time = Instant::now();
 
-    let mut solver = Solver::new(&mut board);
+    let mut solver = Solver::new(&mut board, &robots);
+    let solution = solver.solve(&start_time, 900.0);
 
-    let mut all_best = Solution::default();
-
-    for turn in 1..6 {
-        let mut count = 0;
-        let end_time = turn * 195;
-        let mut temperature = 10.0;
-        let cooling_rate = 0.998;
-
-        let mut base_solution = solver.get_base_solution();
-        base_solution.score = play(&mut board, &mut robots, &base_solution, false);
-
-        let mut best_solution = base_solution.clone();
-        let mut curr_solution = base_solution.clone();
-
-        while start_time.elapsed().as_millis() < end_time {
-            solver.update(&mut curr_solution);
-
-            curr_solution.score = play(&mut board, &mut robots, &curr_solution, false);
-            // eprintln!("Score: {}", solution.score);
-
-            if curr_solution.score > base_solution.score {
-                // eprintln!("Update: {} -> {}", base_solution.score, curr_solution.score);
-                base_solution = curr_solution.clone();
-            } else {
-                let p =
-                    0.5 * ((curr_solution.score - base_solution.score) as f64 / temperature).exp();
-                temperature *= cooling_rate;
-                if rng.gen::<f64>() < p {
-                    base_solution = curr_solution.clone();
-                }
-            }
-
-            if curr_solution.score > best_solution.score {
-                // eprintln!(
-                //     "Best: {} -> {} ({:?})",
-                //     best_solution.score,
-                //     curr_solution.score,
-                //     start_time.elapsed()
-                // );
-                best_solution = curr_solution.clone();
-            }
-
-            curr_solution = base_solution.clone();
-            count += 1;
-        }
-
-        eprintln!(
-            "Run {} best Score: {} ({} runs)",
-            turn, best_solution.score, count
-        );
-        if best_solution.score > all_best.score {
-            all_best = best_solution.clone();
-        }
+    // Replay with the reference simulator to double check the score
+    let score = play(&mut board, &mut robots, &solution, true);
+    if score != solution.score {
+        eprintln!("WARNING: solver score {} != replay score {}", solution.score, score);
     }
 
-    // board.show();
-    // board.apply_solution(&best_solution);
-    // board.show();
-    // board.remove_solution(&best_solution);
-    // eprintln!("{}", play(&mut board, &mut robots, &best_solution, true));
-    // board.show();
-
-    play(&mut board, &mut robots, &all_best, true);
-
-    eprintln!("All runs best Score: {}", all_best.score);
-    println!("{}", all_best.to_string());
+    eprintln!("All runs best Score: {}", score);
+    eprintln!("Elapsed: {:?}", start_time.elapsed());
+    println!("{}", solution.to_string());
 }
